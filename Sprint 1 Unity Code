@@ -1,0 +1,818 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using System.IO.Ports;
+using System;
+
+public class Tetris : MonoBehaviour
+{
+    [Header("Arduino Serial Config (Windows)")]
+    public string portName = "COM8"; // Make sure it is COM8 in the Unity Inspector
+    public int baudRate = 9600;
+    private SerialPort serialPort;
+    private string serialBuffer = "";
+    private float lastGestureTime = 0f; 
+    private readonly float gestureInterval = 0.05f; // Shorten anti-spam interval for faster response
+
+    // Core game variables
+    float tmpdowntime = 0.5f;
+    float tmplifttime = 0f;
+    float gameTime;
+    
+    public GameObject[] nowSquart;
+    public GameObject[] nextSquart;
+    public GameObject TipsWin;
+    public Text scoretext;
+
+    int score = 0;
+    int nowSquartType = 0;
+    int nowSquartRotType = 0;
+    int nowSquartClour = 0;
+    int nextSquartType = 0;
+    int nextSquartRotType = 0;
+    int nextSquartClour = 0;
+    
+    // Kept 25 rows to leave an invisible "spawn buffer zone" at the top for blocks, preventing array out-of-bounds
+    int[,] myArray = new int[25, 10]; 
+    int[] myRow = new int[5];
+    int[] myCol = new int[5];
+    
+    List<List<GameObject>> allSquart = new List<List<GameObject>>();
+    List<int> reList = new List<int>();
+
+    bool[] moveTypeL = new bool[4];
+    bool[] moveTypeR = new bool[4];
+    bool[] moveTypeD = new bool[4];
+
+    private Dictionary<int, string> colorToInstrument;
+    private Dictionary<int, string> columnToTone;
+    
+    [Header("Sound Switch")]
+    public bool isOpenSound = true;
+
+    void Awake()
+    {
+        RangeNextSquart();
+        InitSoundMap();
+        InitArduinoSerial(); 
+    }
+
+    void Start()
+    {
+        gameTime = Time.time;
+        Into();
+        NextSquart();
+    }
+
+    void Update()
+    {
+        if (nowSquart != null && nowSquart[0] != null)
+        {
+            SquareMove();
+            CheckArduinoInput(); 
+        }
+    }
+
+    #region Sound Logic
+    void InitSoundMap()
+    {
+        colorToInstrument = new Dictionary<int, string>()
+        {
+            {1, "Piano"},
+            {2, "Guzheng"},
+            {3, "Guitar"},
+            {4, "Drum"},
+            {5, "Xylophone"}
+        };
+
+        columnToTone = new Dictionary<int, string>()
+        {
+            {0, "Do"},
+            {1, "Re"},
+            {2, "Mi"},
+            {3, "Fa"},
+            {4, "Sol"}
+        };
+    }
+
+    void PlayLandSound()
+    {
+        if (!isOpenSound || nowSquartClour < 1 || nowSquartClour > 5) return;
+        int column = Mathf.Clamp(myCol[0], 0, 4);
+        if (!colorToInstrument.ContainsKey(nowSquartClour) || !columnToTone.ContainsKey(column))
+        {
+            Debug.LogWarning($"No mapping found: color {nowSquartClour} | column {column}");
+            return;
+        }
+        string soundName = $"{colorToInstrument[nowSquartClour]}_{columnToTone[column]}_Long";
+        AudioClip clip = Resources.Load<AudioClip>($"Audio/{soundName}");
+        if (clip == null)
+        {
+            Debug.LogWarning($"Sound effect not found: Assets/Resources/Audio/{soundName}.wav/mp3");
+            return;
+        }
+        Vector3 playPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+        AudioSource.PlayClipAtPoint(clip, playPos, 1f);
+    }
+    #endregion
+
+    #region Serial Communication Core Logic
+    void InitArduinoSerial()
+    {
+        try
+        {
+            if (serialPort != null)
+            {
+                if (serialPort.IsOpen) serialPort.Close();
+                serialPort.Dispose();
+            }
+
+            serialPort = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
+            {
+                ReadTimeout = 20,
+                WriteTimeout = 20,
+                DtrEnable = true, 
+                RtsEnable = false,
+                NewLine = "\r\n" 
+            };
+
+            serialPort.Open();
+            Debug.Log($"Serial port connected successfully: {portName} | Baud rate: {baudRate}");
+        }
+        catch (Exception e)
+        {
+            serialPort = null;
+            Debug.LogWarning($"Serial port connection failed (switching to keyboard control): {e.Message}");
+        }
+    }
+
+    void CheckArduinoInput()
+    {
+        if (serialPort == null || !serialPort.IsOpen) return;
+
+        try
+        {
+            if (serialPort.BytesToRead > 0)
+            {
+                serialBuffer += serialPort.ReadExisting();
+                
+                if (serialBuffer.Contains("\r\n"))
+                {
+                    string[] lines = serialBuffer.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    serialBuffer = ""; 
+
+                    if (lines.Length > 0)
+                    {
+                        string cmd = lines[lines.Length - 1].Trim();
+                        if (cmd.Length == 1 && Time.time - lastGestureTime >= gestureInterval)
+                        {
+                            lastGestureTime = Time.time;
+                            
+                            // [Core Feel Configuration]
+                            // Number of movement iterations per received gesture command
+                            int moveSteps = 3; 
+
+                            if (cmd == "L")
+                            {
+                                Debug.Log($"Command received: L -> Move Left {moveSteps} steps");
+                                for (int i = 0; i < moveSteps; i++) 
+                                {
+                                    LiftMove();
+                                }
+                            }
+                            else if (cmd == "R")
+                            {
+                                Debug.Log($"Command received: R -> Move Right {moveSteps} steps");
+                                for (int i = 0; i < moveSteps; i++) 
+                                {
+                                    RightMove();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (TimeoutException) { }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"Serial read error: {e.Message}");
+            if (serialPort.IsOpen) serialPort.Close();
+            Invoke(nameof(InitArduinoSerial), 1f); 
+        }
+    }
+    #endregion
+
+    #region Game Core Logic
+    void IntoMoveTypeOp()
+    {
+        Array.Clear(moveTypeL, 0, moveTypeL.Length);
+        Array.Clear(moveTypeR, 0, moveTypeR.Length);
+        Array.Clear(moveTypeD, 0, moveTypeD.Length);
+    }
+
+    void Into()
+    {
+        for (int i = 0; i < 25; i++)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                myArray[i, j] = 0;
+            }
+        }
+
+        allSquart.Clear();
+        for (int i = 0; i < 25; i++)
+        {
+            List<GameObject> rowList = new List<GameObject>();
+            for (int j = 0; j < 10; j++)
+            {
+                rowList.Add(null);
+            }
+            allSquart.Add(rowList);
+        }
+        IntoNowSquart();
+    }
+
+    void DeleatNext()
+    {
+        if (nextSquart == null) return;
+        foreach (GameObject cube in nextSquart)
+        {
+            if (cube != null) Destroy(cube);
+        }
+    }
+
+    void RangeNextSquart()
+    {
+        nextSquartType = UnityEngine.Random.Range(0, 7);
+        nextSquartRotType = UnityEngine.Random.Range(0, 4);
+        nextSquartClour = UnityEngine.Random.Range(1, 6);
+    }
+
+    void IntoNowSquart()
+    {
+        nowSquartClour = nextSquartClour;
+        nowSquartRotType = nextSquartRotType;
+        nowSquartType = nextSquartType;
+    }
+
+    void NextSquart()
+    {
+        DeleatNext();
+        IntoNowSquart();
+        // Spawn at height 20 so the upper body of the I-block falls exactly between 21-23 without going out of bounds
+        CreatSquart(nowSquart, 20, 5, nowSquartClour, nowSquartType, nowSquartRotType); 
+        RangeNextSquart();
+        CreatSquart(nextSquart, 13, 17, nextSquartClour, nextSquartType, nextSquartRotType);
+    }
+
+    void CreatSquart(GameObject[] squart, int row, int col, int clour, int type, int rot)
+    {
+        if (squart == nowSquart)
+        {
+            myRow[4] = row;
+            myCol[4] = col;
+        }
+
+        GameObject cubePrefab = Resources.Load<GameObject>("Cube" + clour);
+        if (cubePrefab == null)
+        {
+            Debug.LogWarning($"Prefab not found: Assets/Resources/Cube{clour}.prefab");
+            return;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (squart == nowSquart)
+            {
+                myRow[i] = myRow[4];
+                myCol[i] = myCol[4];
+            }
+            squart[i] = Instantiate(cubePrefab, new Vector3(col, row, 0), Quaternion.identity);
+        }
+        SetPostion(squart, type, rot);
+    }
+
+    void SetPostion(GameObject[] squart, int type, int rot)
+    {
+        switch (type)
+        {
+            case 0: CreatISquare(squart, rot); break;
+            case 1: CreatOSquare(squart, rot); break;
+            case 2: CreatTSquare(squart, rot); break;
+            case 3: CreatLSquare(squart, rot); break;
+            case 4: CreatJSquare(squart, rot); break;
+            case 5: CreatSSquare(squart, rot); break;
+            case 6: CreatZSquare(squart, rot); break;
+        }
+    }
+
+    void SkewingSquare(GameObject[] obj, int index, int x, int y)
+    {
+        if (obj == null || index >= obj.Length || obj[index] == null) return;
+        obj[index].transform.Translate(x, y, 0);
+        if (obj == nowSquart)
+        {
+            myRow[index] += y;
+            myCol[index] += x;
+        }
+    }
+
+    void ResetSquare()
+    {
+        if (nowSquart == null) return;
+        for (int i = 0; i < 4; i++)
+        {
+            if (nowSquart[i] == null) continue;
+            myRow[i] = myRow[4];
+            myCol[i] = myCol[4];
+            nowSquart[i].transform.position = new Vector3(myCol[4], myRow[4], 0);
+        }
+    }
+
+    void CreatISquare(GameObject[] obj, int rot)
+    {
+        if (rot == 0 || rot == 2)
+        {
+            SkewingSquare(obj, 1, 1, 0);
+            SkewingSquare(obj, 2, 2, 0);
+            SkewingSquare(obj, 3, 3, 0);
+        }
+        else
+        {
+            SkewingSquare(obj, 1, 0, 1);
+            SkewingSquare(obj, 2, 0, 2);
+            SkewingSquare(obj, 3, 0, 3);
+        }
+    }
+
+    void CreatOSquare(GameObject[] obj, int rot)
+    {
+        SkewingSquare(obj, 0, -1, 0);
+        SkewingSquare(obj, 2, -1, 1);
+        SkewingSquare(obj, 3, 0, 1);
+    }
+
+    void CreatTSquare(GameObject[] obj, int rot)
+    {
+        switch (rot)
+        {
+            case 0:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 2, 1, 0);
+                SkewingSquare(obj, 3, 0, 1);
+                break;
+            case 1:
+                SkewingSquare(obj, 1, 0, 1);
+                SkewingSquare(obj, 2, 1, 1);
+                SkewingSquare(obj, 3, 0, 2);
+                break;
+            case 2:
+                SkewingSquare(obj, 1, -1, 1);
+                SkewingSquare(obj, 2, 0, 1);
+                SkewingSquare(obj, 3, 1, 1);
+                break;
+            case 3:
+                SkewingSquare(obj, 1, -1, 1);
+                SkewingSquare(obj, 2, 0, 1);
+                SkewingSquare(obj, 3, 0, 2);
+                break;
+        }
+    }
+
+    void CreatLSquare(GameObject[] obj, int rot)
+    {
+        switch (rot)
+        {
+            case 0:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 2, -1, 1);
+                SkewingSquare(obj, 3, -1, 2);
+                break;
+            case 1:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 1, -1, 1);
+                SkewingSquare(obj, 2, 0, 1);
+                SkewingSquare(obj, 3, 1, 1);
+                break;
+            case 2:
+                SkewingSquare(obj, 1, 0, 1);
+                SkewingSquare(obj, 2, 0, 2);
+                SkewingSquare(obj, 3, -1, 2);
+                break;
+            case 3:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 2, 1, 0);
+                SkewingSquare(obj, 3, 1, 1);
+                break;
+        }
+    }
+
+    void CreatJSquare(GameObject[] obj, int rot)
+    {
+        switch (rot)
+        {
+            case 0:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 2, 0, 1);
+                SkewingSquare(obj, 3, 0, 2);
+                break;
+            case 1:
+                SkewingSquare(obj, 0, -1, 0);
+                SkewingSquare(obj, 2, 1, 0);
+                SkewingSquare(obj, 3, -1, 1);
+                break;
+            case 2:
+                SkewingSquare(obj, 1, 0, 1);
+                SkewingSquare(obj, 2, 0, 2);
+                SkewingSquare(obj, 3, 1, 2);
+                break;
+            case 3:
+                SkewingSquare(obj, 0, 1, 0);
+                SkewingSquare(obj, 1, -1, 1);
+                SkewingSquare(obj, 2, 0, 1);
+                SkewingSquare(obj, 3, 1, 1);
+                break;
+        }
+    }
+
+    void CreatSSquare(GameObject[] obj, int rot)
+    {
+        if (rot == 0 || rot == 2)
+        {
+            SkewingSquare(obj, 0, -1, 0);
+            SkewingSquare(obj, 2, 0, 1);
+            SkewingSquare(obj, 3, 1, 1);
+        }
+        else
+        {
+            SkewingSquare(obj, 1, -1, 1);
+            SkewingSquare(obj, 2, 0, 1);
+            SkewingSquare(obj, 3, -1, 2);
+        }
+    }
+
+    void CreatZSquare(GameObject[] obj, int rot)
+    {
+        if (rot == 0 || rot == 2)
+        {
+            SkewingSquare(obj, 1, 1, 0);
+            SkewingSquare(obj, 2, -1, 1);
+            SkewingSquare(obj, 3, 0, 1);
+        }
+        else
+        {
+            SkewingSquare(obj, 0, -1, 0);
+            SkewingSquare(obj, 1, -1, 1);
+            SkewingSquare(obj, 2, 0, 1);
+            SkewingSquare(obj, 3, 0, 2);
+        }
+    }
+
+    void ChangeSquare()
+    {
+        bool canChange = false;
+        switch (nowSquartType)
+        {
+            case 0: canChange = CanChangeISquart(); break;
+            case 1: canChange = false; break;
+            case 2: canChange = CanChangeTSquare(); break;
+            case 3: canChange = CanChangeLSquart(); break;
+            case 4: canChange = CanChangeJSquart(); break;
+            case 5: canChange = CanChangeSsquart(); break;
+            case 6: canChange = CanChangeZsquart(); break;
+        }
+        if (canChange)
+        {
+            ResetSquare();
+            nowSquartRotType = (nowSquartRotType + 1) % 4;
+            SetPostion(nowSquart, nowSquartType, nowSquartRotType);
+        }
+    }
+
+    bool CanChangeISquart()
+    {
+        switch (nowSquartRotType)
+        {
+            case 0: case 2:
+                return CanChange(0, 1) && CanChange(0, 2) && CanChange(0, 3);
+            case 1: case 3:
+                return CanChange(1, 0) && CanChange(2, 0) && CanChange(3, 0);
+            default: return false;
+        }
+    }
+
+    bool CanChangeTSquare()
+    {
+        switch (nowSquartRotType)
+        {
+            case 0: return CanChange(0, 2) && CanChange(1, 1);
+            case 1: return CanChange(-1, 1);
+            case 2: return CanChange(0, 2);
+            case 3: return CanChange(-1, 0) && CanChange(1, 0);
+            default: return false;
+        }
+    }
+
+    bool CanChangeLSquart()
+    {
+        switch (nowSquartRotType)
+        {
+            case 0: return CanChange(0, 1) && CanChange(1, 1);
+            case 1: return CanChange(-1, 2) && CanChange(0, 2);
+            case 2: return CanChange(-1, 0) && CanChange(1, 0) && CanChange(1, 1);
+            case 3: return CanChange(-1, 2) && CanChange(-1, 1);
+            default: return false;
+        }
+    }
+
+    bool CanChangeJSquart()
+    {
+        switch (nowSquartRotType)
+        {
+            case 0: return CanChange(-1, 1) && CanChange(1, 0);
+            case 1: return CanChange(0, 1) && CanChange(0, 2) && CanChange(1, 2);
+            case 2: return CanChange(-1, 1) && CanChange(1, 0) && CanChange(1, 1);
+            case 3: return CanChange(-1, 0) && CanChange(0, 2);
+            default: return false;
+        }
+    }
+
+    bool CanChangeSsquart()
+    {
+        if (nowSquartRotType == 0 || nowSquartRotType == 2)
+            return CanChange(-1, 1) && CanChange(-1, 2);
+        else
+            return CanChange(-1, 0) && CanChange(1, 1);
+    }
+
+    bool CanChangeZsquart()
+    {
+        if (nowSquartRotType == 0 || nowSquartRotType == 2)
+            return CanChange(-1, 0) && CanChange(0, 2);
+        else
+            return CanChange(0, 0) && CanChange(1, 0);
+    }
+
+    bool CanChange(int x, int y)
+    {
+        int checkRow = myRow[4] + y;
+        int checkCol = myCol[4] + x;
+        // Support 25-row buffer zone
+        if (checkRow < 0 || checkRow >= 25 || checkCol < 0 || checkCol >= 10)
+            return false;
+        return myArray[checkRow, checkCol] == 0;
+    }
+
+    void SquareMove()
+    {
+        if (Input.GetKeyDown(KeyCode.S)) tmpdowntime /= 4;
+        if (Input.GetKeyUp(KeyCode.S)) tmpdowntime *= 4;
+
+        if (Time.time - gameTime >= tmpdowntime)
+        {
+            gameTime = Time.time;
+            DowmMove();
+        }
+
+        if (Input.GetKey(KeyCode.A) && Time.time - tmplifttime >= 0.1f)
+        {
+            tmplifttime = Time.time;
+            LiftMove();
+        }
+        else if (Input.GetKey(KeyCode.D) && Time.time - tmplifttime >= 0.1f)
+        {
+            tmplifttime = Time.time;
+            RightMove();
+        }
+
+        if (Input.GetKeyDown(KeyCode.W)) ChangeSquare();
+    }
+
+    void DowmMove()
+    {
+        bool canMoveDown = true;
+        for (int i = 0; i < 4; i++)
+        {
+            if (myRow[i] <= 0 || myArray[myRow[i] - 1, myCol[i]] == 1)
+            {
+                canMoveDown = false;
+                break;
+            }
+        }
+
+        if (canMoveDown)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (nowSquart[i] == null) continue;
+                nowSquart[i].transform.Translate(Vector3.down);
+                myRow[i]--;
+            }
+            myRow[4]--;
+        }
+        else
+        {
+            Bottom();
+            PlayLandSound();
+        }
+        IntoMoveTypeOp();
+    }
+
+    void LiftMove()
+    {
+        bool canMoveLeft = true;
+        for (int i = 0; i < 4; i++)
+        {
+            if (myCol[i] <= 0 || myArray[myRow[i], myCol[i] - 1] == 1)
+            {
+                canMoveLeft = false;
+                break;
+            }
+        }
+
+        if (canMoveLeft)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (nowSquart[i] == null) continue;
+                nowSquart[i].transform.Translate(Vector3.left);
+                myCol[i]--;
+            }
+            myCol[4]--;
+        }
+        IntoMoveTypeOp();
+    }
+
+    void RightMove()
+    {
+        bool canMoveRight = true;
+        for (int i = 0; i < 4; i++)
+        {
+            if (myCol[i] >= 9 || myArray[myRow[i], myCol[i] + 1] == 1)
+            {
+                canMoveRight = false;
+                break;
+            }
+        }
+
+        if (canMoveRight)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                if (nowSquart[i] == null) continue;
+                nowSquart[i].transform.Translate(Vector3.right);
+                myCol[i]++;
+            }
+            myCol[4]++;
+        }
+        IntoMoveTypeOp();
+    }
+
+    void Bottom()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            // Bottom fixing logic must also support 25-row height
+            if (myRow[i] < 0 || myRow[i] >= 25 || myCol[i] < 0 || myCol[i] >= 10) continue;
+            allSquart[myRow[i]][myCol[i]] = nowSquart[i];
+            myArray[myRow[i], myCol[i]] = 1;
+            nowSquart[i] = null;
+        }
+
+        if (IsGameOver())
+        {
+            Time.timeScale = 0f;
+            if (TipsWin != null) TipsWin.SetActive(true);
+        }
+        else
+        {
+            AddList();
+            NextSquart();
+        }
+    }
+
+    bool IsGameOver()
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            if (myArray[19, j] == 1) 
+            {
+                Debug.Log("Game Over: Blocks reached the top");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void AddList()
+    {
+        reList.Clear();
+        for (int i = 0; i < 20; i++)
+        {
+            int fullCount = 0;
+            for (int j = 0; j < 10; j++)
+            {
+                if (myArray[i, j] == 1) fullCount++;
+            }
+            if (fullCount == 10)
+            {
+                reList.Add(i);
+                score++;
+            }
+        }
+
+        if (reList.Count > 0)
+        {
+            RemoveSquart();
+            ShowScore();
+        }
+    }
+
+    void RemoveSquart()
+    {
+        foreach (int row in reList)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                if (allSquart[row][j] != null)
+                {
+                    Destroy(allSquart[row][j]);
+                    allSquart[row][j] = null;
+                }
+                myArray[row, j] = 0;
+            }
+
+            for (int i = row; i < 19; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    allSquart[i][j] = allSquart[i + 1][j];
+                    myArray[i, j] = myArray[i + 1,j];
+                    if (allSquart[i][j] != null)
+                    {
+                        allSquart[i][j].transform.Translate(Vector3.down);
+                    }
+                }
+            }
+
+            for (int j = 0; j < 10; j++)
+            {
+                allSquart[19][j] = null;
+                myArray[19, j] = 0;
+            }
+        }
+    }
+
+    public void ExitGame()
+    {
+        ReleaseSerialPort();
+        Application.Quit();
+    }
+
+    public void LoadGame()
+    {
+        ReleaseSerialPort();
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(0);
+    }
+
+    void ShowScore()
+    {
+        if (scoretext != null)
+        {
+            scoretext.text = "Score: " + score.ToString();
+        }
+    }
+    #endregion
+
+    #region Serial Port Resource Release
+    void ReleaseSerialPort()
+    {
+        if (serialPort != null)
+        {
+            if (serialPort.IsOpen) serialPort.Close();
+            serialPort.Dispose();
+            serialPort = null;
+        }
+    }
+
+    void OnApplicationPause(bool pause)
+    {
+        if (pause) ReleaseSerialPort();
+    }
+
+    void OnDestroy()
+    {
+        ReleaseSerialPort();
+    }
+
+    void OnApplicationQuit()
+    {
+        ReleaseSerialPort();
+    }
+    #endregion
+}

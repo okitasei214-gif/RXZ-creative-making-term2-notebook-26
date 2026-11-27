@@ -1,0 +1,32 @@
+#include <Adafruit_APDS9960.h>
+
+Adafruit_APDS9960 apds;
+uint8_t last_prox = 0;
+bool is_left = false;
+
+void setup() {
+  Serial.begin(9600);
+  while(!Serial) delay(10);
+  
+  apds.begin();
+  apds.enableProximity(true);
+}
+
+void loop() {
+  uint8_t prox = apds.readProximity();
+  
+  if (prox > 50) { 
+    if (prox > last_prox && !is_left) {
+      Serial.println("L"); 
+      is_left = true;
+      delay(200); 
+    } else if (prox < last_prox && is_left) {
+      Serial.println("R"); 
+      is_left = false;
+      delay(200); 
+    }
+  }
+  
+  last_prox = prox;
+  delay(50); 
+}  
