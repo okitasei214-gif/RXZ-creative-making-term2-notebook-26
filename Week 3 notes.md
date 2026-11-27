@@ -16,16 +16,16 @@ We initiated a new hybrid 2D/3D Unity project and configured the main scene. A c
 
 To ensure clear visual feedback, a directional light was introduced, and the main orthographic camera was meticulously positioned to frame the playfield perfectly, ensuring players have an unobstructed view of the falling blocks.
 
-![Scene Setup 1](https://git.arts.ac.uk/user-attachments/assets/cc711a59-a93f-48ec-81e3-ff80a7f089ce)
+![Scene Setup 1](assets/cc711a59-a93f-48ec-81e3-ff80a7f089ce.jpg)
 
-![Scene Setup 2](https://git.arts.ac.uk/user-attachments/assets/4029d778-b978-4bc5-8510-b12e1d00b7f5)
+![Scene Setup 2](assets/4029d778-b978-4bc5-8510-b12e1d00b7f5.jpg)
 
 ### 3. First Code Implementation & Core Mechanics
 
 **Initial Scripting:**
 A primary C# script, `Tetris.cs`, was authored and attached to the "Frame" GameObject to serve as the central game state manager. This script was responsible for maintaining the grid array, instantiating block prefabs, and listening for basic keyboard inputs (A/D/S/W) to simulate our intended physical interactions.
 
-<img width="1090" alt="Script Screenshot" src="https://git.arts.ac.uk/user-attachments/assets/993f220d-8f8d-4e14-be25-c860a927188a" />
+<img width="1090" alt="Script Screenshot" src="assets/993f220d-8f8d-4e14-be25-c860a927188a.png" />
 
 ### 4. Technical Challenges & Iteration Reasoning
 

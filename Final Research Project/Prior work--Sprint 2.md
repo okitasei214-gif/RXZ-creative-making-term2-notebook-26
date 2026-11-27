@@ -109,17 +109,17 @@ Moving from a conceptual framework to a working prototype presented significant 
 ## 6. Documentation & Media Assets
 
 * **Image 1:** State 1 - Nourishing (Single User interaction)
-![2c18aba53aac5dfe62e67b9b1d60e29](https://git.arts.ac.uk/user-attachments/assets/8d65daea-06b1-485b-b8d1-a3f68469826c)
+![2c18aba53aac5dfe62e67b9b1d60e29](../assets/8d65daea-06b1-485b-b8d1-a3f68469826c.jpg)
 
 * **Image 2:** State 2 - Ecological Stress (Multi-User Interference)
-![bd091b9b6e6dd7d849a7ac9ead3bc71](https://git.arts.ac.uk/user-attachments/assets/bcadabbf-4078-47ea-a33d-72126d25b9fd)
+![bd091b9b6e6dd7d849a7ac9ead3bc71](../assets/bcadabbf-4078-47ea-a33d-72126d25b9fd.jpg)
 
 * **Image 3:** TouchDesigner Setup
-![2b72285be2251a8ca6ccd0b51611119](https://git.arts.ac.uk/user-attachments/assets/d3d85d9c-4416-4980-a70c-f3d195570260)
+![2b72285be2251a8ca6ccd0b51611119](../assets/d3d85d9c-4416-4980-a70c-f3d195570260.png)
 
 * **Demo Video:** 
 
-https://git.arts.ac.uk/user-attachments/assets/19d29c1d-8f13-4911-b73e-886eba97ecaa
+../assets/19d29c1d-8f13-4911-b73e-886eba97ecaa.mp4
 
 
 

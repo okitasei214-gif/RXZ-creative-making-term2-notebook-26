@@ -26,15 +26,15 @@ With communication established, we moved into the playtesting phase and implemen
 
 ### 3. Code Implementation
 [Arduino Code](https://git.arts.ac.uk/r-zhou0220252/RXZ-creative-making-term2-notebook-26/blob/main/Sprint%201%20Arduino%20Code)  
-![10d60d1f22a86da77e8c7336cb41593](https://git.arts.ac.uk/user-attachments/assets/fbbc4774-477f-4768-8c50-7fd0f3114c40)
+![10d60d1f22a86da77e8c7336cb41593](assets/fbbc4774-477f-4768-8c50-7fd0f3114c40.jpg)
 [Unity Code](https://git.arts.ac.uk/r-zhou0220252/RXZ-creative-making-term2-notebook-26/blob/main/Sprint%201%20Unity%20Code)
 
 ### 4. Final Game Demonstration  
-![d8395a907a62703f51e90ca45641b7b](https://git.arts.ac.uk/user-attachments/assets/4874021e-aded-437f-87b4-20887ffbe27f)
-![499917b92682340853abdaf09ed0113](https://git.arts.ac.uk/user-attachments/assets/da0844ce-1778-4174-b1aa-f14efa7f2682)
+![d8395a907a62703f51e90ca45641b7b](assets/4874021e-aded-437f-87b4-20887ffbe27f.png)
+![499917b92682340853abdaf09ed0113](assets/da0844ce-1778-4174-b1aa-f14efa7f2682.jpg)
 Through seamless hardware-software integration, we successfully realized a physical version of Tetris. Players can fully control the horizontal movement of falling blocks using air gestures alone, without touching any physical buttons. When a block settles, the system triggers different musical notes based on its final position, creating an immersive fusion of physical interaction and generative audio feedback.  
 
-https://git.arts.ac.uk/user-attachments/assets/f061e8f5-fa47-4b9e-a505-73078151f919
+assets/f061e8f5-fa47-4b9e-a505-73078151f919.mp4
 
 
 

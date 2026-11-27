@@ -27,25 +27,25 @@ This project is a massive departure from my Sprint 2 group project. Originally, 
 I independently overhauled both the interaction logic and the conceptual framework. I shifted the entire system from tracking presence to analysing movement velocity and quality. I personally built the custom CHOP pipeline utilising the Slope-Math-Logic sequence to extract velocity, introduced the Lag CHOP to simulate ecological trauma, and used the Displace TOP logic to create the digital ecosystem dissolution that defines the final concept. 
 
 ## Project Images 
-![edd49eae40713dbdf8ed25164f93f06](https://git.arts.ac.uk/user-attachments/assets/e05f9626-c77e-46e6-8d77-915d46113898)
+![edd49eae40713dbdf8ed25164f93f06](../assets/e05f9626-c77e-46e6-8d77-915d46113898.png)
 <sub>Screenshot of the whole system.</sub>
 
-![def047e1afb916e32afbf1ba934fb8a](https://git.arts.ac.uk/user-attachments/assets/ef6972a8-955b-4bd6-be1b-71b87092550d)
+![def047e1afb916e32afbf1ba934fb8a](../assets/ef6972a8-955b-4bd6-be1b-71b87092550d.jpg)
 <sub>Detail of the healthy visual state, rewarded by low-velocity movement.</sub>
 
-![14d1d8180735007981e3b4c9f90a48f](https://git.arts.ac.uk/user-attachments/assets/9641e777-19b8-487d-82ec-9b6de198dbbe)
+![14d1d8180735007981e3b4c9f90a48f](../assets/9641e777-19b8-487d-82ec-9b6de198dbbe.png)
 <sub>Detail of the image apart as a penalty for high-velocity intervention.</sub>
 
-![32161610f2d1c20c9f0f898791701fd](https://git.arts.ac.uk/user-attachments/assets/ea6d8093-d695-4084-baec-877043913458)
+![32161610f2d1c20c9f0f898791701fd](../assets/ea6d8093-d695-4084-baec-877043913458.jpg)
 <sub>Image of user testing the interface with slow, gentle gestures to nurture the ecosystem.</sub>
 
-![5c9212163a55a411b01e959de3ab96b](https://git.arts.ac.uk/user-attachments/assets/ab6ffe95-654a-407b-9c05-bed97f2b686c)
+![5c9212163a55a411b01e959de3ab96b](../assets/ab6ffe95-654a-407b-9c05-bed97f2b686c.jpg)
 <sub>Image of a user confusing with this system</sub>
 
-![883f75d3a01b54e0521bfa77f06d4b6](https://git.arts.ac.uk/user-attachments/assets/4404f4c5-d236-4211-86a4-14ff4a663796)
+![883f75d3a01b54e0521bfa77f06d4b6](../assets/4404f4c5-d236-4211-86a4-14ff4a663796.jpg)
 <sub>Image of a user testing the system, waving rapidly and triggering the velocity threshold.(Face not shown, per participant request)</sub>  
 
-![66ef1f636b64c424f7c7462d73d67e2](https://git.arts.ac.uk/user-attachments/assets/08766f05-f902-4d81-b104-0e9ead840f86)
+![66ef1f636b64c424f7c7462d73d67e2](../assets/08766f05-f902-4d81-b104-0e9ead840f86.jpg)
 <sub>Image of me when debugging the system.</sub>
 
 ## Link to project files
@@ -64,7 +64,7 @@ All necessary project files and assets are included in this repository.
 ## Demo Video
 
 
-https://git.arts.ac.uk/user-attachments/assets/27e3d064-eafd-4d76-b94a-4745279ad225
+../assets/27e3d064-eafd-4d76-b94a-4745279ad225.mp4
 
 
 
@@ -107,7 +107,7 @@ Expressed intense frustration during the interaction. He felt the system lacked 
 > "The first one you've got that's more of a visual as more of a visual representation that you can kind of follow. It seemed to like be mapped out visually better, but with the other one, we felt more tactile in a way and you could just explore."
 > 
 ### Actual User Journey Map:
-![user journey map](https://git.arts.ac.uk/user-attachments/assets/c6c77bd8-bd07-4fc4-ba4e-351959050639)
+![user journey map](../assets/c6c77bd8-bd07-4fc4-ba4e-351959050639.png)
 
 ### Revision Plan:
 

@@ -13,7 +13,7 @@ To keep the interaction intuitive, we aimed to map fundamental physical actions 
 
 **Step 1: Pressure Sensor**
 
-<img width="500" alt="IMG_6994" src="https://git.arts.ac.uk/user-attachments/assets/a9f54ffb-39d3-4912-bebf-6c862828e644" />
+<img width="500" alt="IMG_6994" src="assets/a9f54ffb-39d3-4912-bebf-6c862828e644.jpg" />
 
 ###### Figure 1: Pressure sensor reference circuit explored during the initial research phase.
 
@@ -24,15 +24,15 @@ Initially, we intended to use a pressure sensor. While exploring standard module
 For our Tetris controller, physical pressure felt analogous to a hard key press, making it potentially suitable for actions like "Hard Drop" or "Rotate". Conversely, gesture control maps more naturally to spatial movement (left/right positioning). Since we couldn’t acquire a pressure sensor in time, we pivoted entirely to gesture control for this iteration.
 
 **Step 2: PAJ7620 Gesture Sensor**
-![b410b61ac581b7be418f10b89697a46](https://git.arts.ac.uk/user-attachments/assets/c7d292ce-261a-4ae0-b788-2616691b8c20)
+![b410b61ac581b7be418f10b89697a46](assets/c7d292ce-261a-4ae0-b788-2616691b8c20.jpg)
 ###### Figure2: DollaTek PAJ7620U2 Gesture Recognition Sensor Module
 
 Next, we investigated the PAJ7620 gesture sensor. It supports comprehensive multi-gesture recognition. However, after reviewing its documentation, we concluded that its setup and library dependencies were unnecessarily complex for our current MVP (Minimum Viable Product) stage.
 
 **Step 3: APDS9960 Gesture Sensor**
 
-![0516d80351d5986a45793b705e60d71](https://git.arts.ac.uk/user-attachments/assets/a0453aaa-d7c2-4282-8a9f-62902eadb224)
-<img width="300" alt="image" src="https://git.arts.ac.uk/user-attachments/assets/6a84f5bf-e70f-46b5-8be3-3f2a1605e9d9" />
+![0516d80351d5986a45793b705e60d71](assets/a0453aaa-d7c2-4282-8a9f-62902eadb224.jpg)
+<img width="300" alt="image" src="assets/6a84f5bf-e70f-46b5-8be3-3f2a1605e9d9.jpg" />
 
 ###### Figure 3: APDS9960 sensor module tested；
 ###### Figure 4: The wiring diagram we used as a reference was drawn from the previous version of APDS9960；
@@ -41,7 +41,7 @@ We then shifted our attention to the APDS9960. It offers reliable gesture recogn
 
 ### 3. Arduino Firmware Design & Testing
 
-https://git.arts.ac.uk/user-attachments/assets/58b23f4e-4d29-41c7-97ec-8cb59f4160ea
+assets/58b23f4e-4d29-41c7-97ec-8cb59f4160ea.mp4
 
 ###### Video 1: Verification of the APDS9960 functioning flawlessly within the standalone Arduino Serial Monitor.
 
